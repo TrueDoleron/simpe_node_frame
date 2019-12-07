@@ -1,5 +1,7 @@
 const http = require('http')
 
+const CombineFucntions = require('./CombineFunctions')
+
 module.exports = class Framework {
     constructor(){
         this.middleware = []
@@ -14,6 +16,22 @@ module.exports = class Framework {
     }
 
     handle(){
-        return (req, res) => {}
+        const fns = CombineFucntions(this.middleware)
+        return (req, res) => {
+            const ctx = {req, res}
+            fns(ctx)
+            .then(() => this.finishResponse(ctx))
+            .catch((e) => {
+                console.log(e)
+                res.writeHead(500, {'Content-Type': 'text/plain'})
+                res.end('Error')
+            })
+        }
+    }
+
+    finishResponse(ctx){
+        const {res, status = 200, contentType = 'application/json', body = ''} = ctx 
+        res.writeHead( status, {'Content-Type': contentType})
+        res.end(contentType === "application/json" ? JSON.stringify(body) : body)
     }
 }
